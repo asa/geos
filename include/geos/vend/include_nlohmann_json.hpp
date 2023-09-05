@@ -15,10 +15,10 @@
 #define GEOS_VEND_JSON
 
 #ifdef nlohmann
-    #error "GEOS modifies the nlohmann define "
-#endif    
+#error "GEOS modifies the nlohmann define "
+#endif
 #define nlohmann geos_nlohmann
-#include "geos/vend/json.hpp"
+#include <geos/vend/json.hpp>
 #undef nlohmann
 
 #endif

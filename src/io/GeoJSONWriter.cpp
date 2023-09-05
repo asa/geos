@@ -12,96 +12,82 @@
  *
  **********************************************************************/
 
+#include <geos/geom/Coordinate.h>
+#include <geos/geom/CoordinateArraySequence.h>
+#include <geos/geom/CoordinateSequence.h>
+#include <geos/geom/LineString.h>
+#include <geos/geom/LinearRing.h>
+#include <geos/geom/MultiLineString.h>
+#include <geos/geom/MultiPoint.h>
+#include <geos/geom/MultiPolygon.h>
+#include <geos/geom/Point.h>
+#include <geos/geom/Polygon.h>
+#include <geos/geom/PrecisionModel.h>
 #include <geos/io/GeoJSONWriter.h>
 #include <geos/util/IllegalArgumentException.h>
-#include <geos/geom/Coordinate.h>
-#include <geos/geom/Point.h>
-#include <geos/geom/LinearRing.h>
-#include <geos/geom/LineString.h>
-#include <geos/geom/Polygon.h>
-#include <geos/geom/MultiPoint.h>
-#include <geos/geom/MultiLineString.h>
-#include <geos/geom/MultiPolygon.h>
-#include <geos/geom/CoordinateSequence.h>
-#include <geos/geom/CoordinateArraySequence.h>
-#include <geos/geom/PrecisionModel.h>
 
 #include <algorithm>
+#include <cassert>
 #include <ostream>
 #include <sstream>
-#include <cassert>
 
 #define GEOS_COMPILATION
 
 using namespace geos::geom;
-using json = geos_nlohmann::ordered_json;
+using json = nlohmann::ordered_json;
 
 namespace geos {
-namespace io { // geos.io
+namespace io {  // geos.io
 
-std::string GeoJSONWriter::write(const geom::Geometry* geometry, GeoJSONType type)
-{
+std::string GeoJSONWriter::write(const geom::Geometry* geometry, GeoJSONType type) {
     json j;
     encode(geometry, type, j);
     return j.dump();
 }
 
-std::string GeoJSONWriter::writeFormatted(const geom::Geometry* geometry, GeoJSONType type, int indent)
-{
+std::string GeoJSONWriter::writeFormatted(const geom::Geometry* geometry, GeoJSONType type, int indent) {
     json j;
     encode(geometry, type, j);
     return j.dump(indent);
 }
 
-std::string GeoJSONWriter::write(const GeoJSONFeature& feature)
-{
+std::string GeoJSONWriter::write(const GeoJSONFeature& feature) {
     json j;
     encodeFeature(feature, j);
     return j.dump();
 }
 
-void GeoJSONWriter::encodeGeoJSONValue(const std::string& key, const GeoJSONValue& value,
-                                       geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encodeGeoJSONValue(const std::string& key, const GeoJSONValue& value, nlohmann::ordered_json& j) {
     if (value.isNumber()) {
         if (j.is_object()) {
             j[key] = value.getNumber();
-        }
-        else {
+        } else {
             j.push_back(value.getNumber());
         }
-    }
-    else if (value.isString()) {
+    } else if (value.isString()) {
         if (j.is_object()) {
             j[key] = value.getString();
-        }
-        else {
+        } else {
             j.push_back(value.getString());
         }
-    }
-    else if (value.isBoolean()) {
+    } else if (value.isBoolean()) {
         if (j.is_object()) {
             j[key] = value.getBoolean();
-        }
-        else {
+        } else {
             j.push_back(value.getBoolean());
         }
-    }
-    else if (value.isNull()) {
+    } else if (value.isNull()) {
         if (j.is_object()) {
             j[key] = nullptr;
-        }
-        else {
+        } else {
             j.push_back(nullptr);
         }
-    }
-    else if (value.isArray()) {
+    } else if (value.isArray()) {
         j[key] = json::array();
         for (const GeoJSONValue& v : value.getArray()) {
             encodeGeoJSONValue("", v, j[key]);
         }
-    }
-    else if (value.isObject()) {
+    } else if (value.isObject()) {
         j[key] = json::object();
         for (const auto& entry : value.getObject()) {
             encodeGeoJSONValue(entry.first, entry.second, j[key]);
@@ -109,8 +95,7 @@ void GeoJSONWriter::encodeGeoJSONValue(const std::string& key, const GeoJSONValu
     }
 }
 
-std::string GeoJSONWriter::write(const GeoJSONFeatureCollection& features)
-{
+std::string GeoJSONWriter::write(const GeoJSONFeatureCollection& features) {
     json j;
     j["type"] = "FeatureCollection";
     json featuresJson = json::array();
@@ -123,8 +108,7 @@ std::string GeoJSONWriter::write(const GeoJSONFeatureCollection& features)
     return j.dump();
 }
 
-void GeoJSONWriter::encodeFeature(const GeoJSONFeature& feature, geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encodeFeature(const GeoJSONFeature& feature, nlohmann::ordered_json& j) {
     j["type"] = "Feature";
     json geometryJson;
     encodeGeometry(feature.getGeometry(), geometryJson);
@@ -138,29 +122,24 @@ void GeoJSONWriter::encodeFeature(const GeoJSONFeature& feature, geos_nlohmann::
     j["properties"] = propertiesJson;
 }
 
-void GeoJSONWriter::encode(const geom::Geometry* geometry, GeoJSONType geojsonType, geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encode(const geom::Geometry* geometry, GeoJSONType geojsonType, nlohmann::ordered_json& j) {
     if (geojsonType == GeoJSONType::GEOMETRY) {
         encodeGeometry(geometry, j);
-    }
-    else if (geojsonType == GeoJSONType::FEATURE) {
+    } else if (geojsonType == GeoJSONType::FEATURE) {
         encodeFeature(geometry, j);
-    }
-    else if (geojsonType == GeoJSONType::FEATURE_COLLECTION) {
+    } else if (geojsonType == GeoJSONType::FEATURE_COLLECTION) {
         encodeFeatureCollection(geometry, j);
     }
 }
 
-void GeoJSONWriter::encodeFeature(const geom::Geometry* g, geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encodeFeature(const geom::Geometry* g, nlohmann::ordered_json& j) {
     json geometryJson;
     encodeGeometry(g, geometryJson);
     j["type"] = "Feature";
     j["geometry"] = geometryJson;
 }
 
-void GeoJSONWriter::encodeFeatureCollection(const geom::Geometry* g, geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encodeFeatureCollection(const geom::Geometry* g, nlohmann::ordered_json& j) {
     json featureJson;
     encodeFeature(g, featureJson);
     std::vector<json> features;
@@ -169,57 +148,47 @@ void GeoJSONWriter::encodeFeatureCollection(const geom::Geometry* g, geos_nlohma
     j["features"] = features;
 }
 
-void GeoJSONWriter::encodeGeometry(const geom::Geometry* geometry, geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encodeGeometry(const geom::Geometry* geometry, nlohmann::ordered_json& j) {
     auto type = geometry->getGeometryTypeId();
     if (type == GEOS_POINT) {
         auto point = static_cast<const geom::Point*>(geometry);
         encodePoint(point, j);
-    }
-    else if (type == GEOS_LINESTRING) {
+    } else if (type == GEOS_LINESTRING) {
         auto line = static_cast<const geom::LineString*>(geometry);
         encodeLineString(line, j);
-    }
-    else if (type == GEOS_POLYGON) {
+    } else if (type == GEOS_POLYGON) {
         auto poly = static_cast<const geom::Polygon*>(geometry);
         encodePolygon(poly, j);
-    }
-    else if (type == GEOS_MULTIPOINT) {
+    } else if (type == GEOS_MULTIPOINT) {
         auto multiPoint = static_cast<const geom::MultiPoint*>(geometry);
         encodeMultiPoint(multiPoint, j);
-    }
-    else if (type == GEOS_MULTILINESTRING) {
+    } else if (type == GEOS_MULTILINESTRING) {
         auto multiLineString = static_cast<const geom::MultiLineString*>(geometry);
         encodeMultiLineString(multiLineString, j);
-    }
-    else if (type == GEOS_MULTIPOLYGON) {
+    } else if (type == GEOS_MULTIPOLYGON) {
         auto multiPolygon = static_cast<const geom::MultiPolygon*>(geometry);
         encodeMultiPolygon(multiPolygon, j);
-    }
-    else if (type == GEOS_GEOMETRYCOLLECTION) {
+    } else if (type == GEOS_GEOMETRYCOLLECTION) {
         auto geometryCollection = static_cast<const geom::GeometryCollection*>(geometry);
         encodeGeometryCollection(geometryCollection, j);
     }
 }
 
-void GeoJSONWriter::encodePoint(const geom::Point* point, geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encodePoint(const geom::Point* point, nlohmann::ordered_json& j) {
     j["type"] = "Point";
     j["coordinates"] = convertCoordinate(point->getCoordinate());
 }
 
-void GeoJSONWriter::encodeLineString(const geom::LineString* line, geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encodeLineString(const geom::LineString* line, nlohmann::ordered_json& j) {
     j["type"] = "LineString";
     j["coordinates"] = convertCoordinateSequence(line->getCoordinates().get());
 }
 
-void GeoJSONWriter::encodePolygon(const geom::Polygon* poly, geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encodePolygon(const geom::Polygon* poly, nlohmann::ordered_json& j) {
     j["type"] = "Polygon";
     std::vector<std::vector<std::pair<double, double>>> rings;
     auto ring = poly->getExteriorRing();
-    rings.reserve(poly->getNumInteriorRing()+1);
+    rings.reserve(poly->getNumInteriorRing() + 1);
     rings.push_back(convertCoordinateSequence(ring->getCoordinates().get()));
     for (size_t i = 0; i < poly->getNumInteriorRing(); i++) {
         rings.push_back(convertCoordinateSequence(poly->getInteriorRingN(i)->getCoordinates().get()));
@@ -227,14 +196,12 @@ void GeoJSONWriter::encodePolygon(const geom::Polygon* poly, geos_nlohmann::orde
     j["coordinates"] = rings;
 }
 
-void GeoJSONWriter::encodeMultiPoint(const geom::MultiPoint* multiPoint, geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encodeMultiPoint(const geom::MultiPoint* multiPoint, nlohmann::ordered_json& j) {
     j["type"] = "MultiPoint";
     j["coordinates"] = convertCoordinateSequence(multiPoint->getCoordinates().get());
 }
 
-void GeoJSONWriter::encodeMultiLineString(const geom::MultiLineString* multiLineString, geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encodeMultiLineString(const geom::MultiLineString* multiLineString, nlohmann::ordered_json& j) {
     j["type"] = "MultiLineString";
     std::vector<std::vector<std::pair<double, double>>> lines;
     lines.reserve(multiLineString->getNumGeometries());
@@ -244,8 +211,7 @@ void GeoJSONWriter::encodeMultiLineString(const geom::MultiLineString* multiLine
     j["coordinates"] = lines;
 }
 
-void GeoJSONWriter::encodeMultiPolygon(const geom::MultiPolygon* multiPolygon, geos_nlohmann::ordered_json& json)
-{
+void GeoJSONWriter::encodeMultiPolygon(const geom::MultiPolygon* multiPolygon, nlohmann::ordered_json& json) {
     json["type"] = "MultiPolygon";
     std::vector<std::vector<std::vector<std::pair<double, double>>>> polygons;
     polygons.reserve(multiPolygon->getNumGeometries());
@@ -263,8 +229,7 @@ void GeoJSONWriter::encodeMultiPolygon(const geom::MultiPolygon* multiPolygon, g
     json["coordinates"] = polygons;
 }
 
-void GeoJSONWriter::encodeGeometryCollection(const geom::GeometryCollection* g, geos_nlohmann::ordered_json& j)
-{
+void GeoJSONWriter::encodeGeometryCollection(const geom::GeometryCollection* g, nlohmann::ordered_json& j) {
     j["type"] = "GeometryCollection";
     auto geometryArray = j.array();
     for (size_t i = 0; i < g->getNumGeometries(); i++) {
@@ -275,22 +240,18 @@ void GeoJSONWriter::encodeGeometryCollection(const geom::GeometryCollection* g, 
     j["geometries"] = geometryArray;
 }
 
-std::pair<double, double> GeoJSONWriter::convertCoordinate(const Coordinate* c)
-{
-    return std::make_pair(c->x, c->y);
-}
+std::pair<double, double> GeoJSONWriter::convertCoordinate(const Coordinate* c) { return std::make_pair(c->x, c->y); }
 
-std::vector<std::pair<double, double>> GeoJSONWriter::convertCoordinateSequence(const CoordinateSequence*
-                                    coordinateSequence)
-{
+std::vector<std::pair<double, double>> GeoJSONWriter::convertCoordinateSequence(
+    const CoordinateSequence* coordinateSequence) {
     std::vector<std::pair<double, double>> coordinates;
     coordinates.reserve(coordinateSequence->size());
-    for (size_t i = 0; i<coordinateSequence->size(); i++) {
+    for (size_t i = 0; i < coordinateSequence->size(); i++) {
         const geom::Coordinate& c = coordinateSequence->getAt(i);
         coordinates.push_back(convertCoordinate(&c));
     }
     return coordinates;
 }
 
-} // namespace geos.io
-} // namespace geos
+}  // namespace io
+}  // namespace geos
