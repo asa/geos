@@ -21,13 +21,14 @@
 #define GEOS_IO_BYTEORDERDATAINSTREAM_H
 
 #include <geos/export.h>
+#include <cstddef>
 #include <cstdint>
 
-//#include <geos/io/ParseException.h>
-//#include <geos/io/ByteOrderValues.h>
+// #include <geos/io/ParseException.h>
+// #include <geos/io/ByteOrderValues.h>
 #include <geos/inline.h>
 
-#include <iosfwd> // ostream, istream (if we remove inlines)
+#include <iosfwd>  // ostream, istream (if we remove inlines)
 
 namespace geos {
 namespace io {
@@ -40,38 +41,36 @@ namespace io {
  *
  */
 class GEOS_DLL ByteOrderDataInStream {
-
-public:
-
+   public:
     ByteOrderDataInStream(const unsigned char* buff = nullptr, size_t buff_sz = 0);
 
     ~ByteOrderDataInStream();
 
     void setOrder(int order);
 
-    unsigned char readByte(); // throws ParseException
+    unsigned char readByte();  // throws ParseException
 
-    int32_t readInt(); // throws ParseException
+    int32_t readInt();  // throws ParseException
 
-    uint32_t readUnsigned(); // throws ParseException
+    uint32_t readUnsigned();  // throws ParseException
 
-    int64_t readLong(); // throws ParseException
+    int64_t readLong();  // throws ParseException
 
-    double readDouble(); // throws ParseException
+    double readDouble();  // throws ParseException
 
     size_t size() const;
 
-private:
+   private:
     int byteOrder;
     const unsigned char* buf;
     const unsigned char* end;
 };
 
-} // namespace io
-} // namespace geos
+}  // namespace io
+}  // namespace geos
 
 #ifdef GEOS_INLINE
 #include <geos/io/ByteOrderDataInStream.inl>
 #endif
 
-#endif // #ifndef GEOS_IO_BYTEORDERDATAINSTREAM_H
+#endif  // #ifndef GEOS_IO_BYTEORDERDATAINSTREAM_H
